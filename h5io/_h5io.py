@@ -12,6 +12,8 @@ from io import UnsupportedOperation
 
 import numpy as np
 
+from h5io.chunked_array import ChunkedArray
+
 special_chars = {'{FWDSLASH}': '/'}
 tab_str = '----'
 
@@ -57,6 +59,15 @@ def _create_pandas_dataset(fname, root, key, title, data):
     data.to_hdf(fname, rootpath)
     with h5py.File(fname, mode='a') as fid:
         fid[rootpath].attrs['TITLE'] = 'pd_dataframe'
+
+
+def _create_write_chunked_array(root, key, name, value):
+    if key not in root:
+        dset = root.create_dataset(key, value.shape, chunks=value.chunk_size)
+        dset.attrs['TITLE'] = name
+    else:
+        dset = root[key]
+    dset[value.chunkslice] = value.chunkdata
 
 
 def write_hdf5(fname, data, overwrite=False, compression=4,
@@ -230,6 +241,8 @@ def _triage_write(key, value, root, comp_kw, where,
         _triage_write('shape', value.shape, sub_root, comp_kw,
                       where + '.csr_matrix_shape', cleanup_data=cleanup_data,
                       slash=slash)
+    elif isinstance(value, ChunkedArray):
+        _create_write_chunked_array(root, key, 'chunkedarray', value)
     else:
         try:
             from pandas import DataFrame, Series
