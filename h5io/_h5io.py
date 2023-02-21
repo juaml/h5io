@@ -372,7 +372,7 @@ def _triage_read(node, slash='ignore'):
         else:
             raise NotImplementedError('Unknown group type: {0}'
                                       ''.format(type_str))
-    elif type_str == 'ndarray':
+    elif type_str in ('ndarray', 'chunkedarray'):
         data = np.array(node)
     elif type_str in ('int', 'float'):
         cast = int if type_str == 'int' else float
