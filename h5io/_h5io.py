@@ -125,7 +125,7 @@ def write_hdf5(fname, data, overwrite=False, compression=4,
         comp_kw = dict(compression='gzip', compression_opts=compression)
 
     def _write(fid, cleanup_data):
-        if title in fid:
+        if title in fid and not isinstance(data, ChunkedArray):
             del fid[title]
         _triage_write(title, data, fid, comp_kw, str(type(data)),
                       cleanup_data, slash=slash, title=title,

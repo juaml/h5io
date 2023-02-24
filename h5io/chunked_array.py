@@ -45,11 +45,15 @@ class ChunkedArray:
     @property
     def chunkslice(self) -> Tuple[slice, slice, slice]:
         """Return the slice of the chunk to write to the dataset."""
-        chunk_end = (self.n_chunk + 1 * self.shape[2])
+        chunk_start = self.n_chunk * self.chunk_size[2]
+        chunk_end = ((self.n_chunk + 1) * self.chunk_size[2])
         if chunk_end > self.shape[2]:
             chunk_end = self.shape[2]
-        return (
-            slice(0, self.shape[0]),
-            slice(0, self.shape[1]),
-            slice(self.n_chunk * self.shape[2], chunk_end)
+
+        out = (
+            slice(0, self.shape[0], 1),
+            slice(0, self.shape[1], 1),
+            slice(chunk_start, chunk_end, 1)
         )
+        print(out)
+        return out
