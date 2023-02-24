@@ -12,7 +12,7 @@ from io import UnsupportedOperation
 
 import numpy as np
 
-from h5io.chunked_array import ChunkedArray
+from .chunked_array import ChunkedArray
 
 special_chars = {'{FWDSLASH}': '/'}
 tab_str = '----'
