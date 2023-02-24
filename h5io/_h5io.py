@@ -65,8 +65,22 @@ def _create_write_chunked_array(root, key, name, value):
     if key not in root:
         dset = root.create_dataset(key, value.shape, chunks=value.chunk_size)
         dset.attrs['TITLE'] = name
+        dset.attrs['SHAPE'] = value.shape
+        dset.attrs['CHUNK_SIZE'] = value.chunk_size
     else:
         dset = root[key]
+        stored_shape = dset.shape
+        stored_chunk_size = dset.chunks
+        if np.all(stored_shape != value.shape):
+            raise ValueError(
+                f"The stored shape ({stored_shape}) does not match the given "
+                f"shape ({value.shape})."
+            )
+        if np.all(stored_chunk_size != value.chunk_size):
+            raise ValueError(
+                f"The stored chunk size ({stored_chunk_size}) does not match "
+                f"the given chunk size ({value.chunk_size})."
+            )
     dset[value.chunkslice] = value.chunkdata
 
 
