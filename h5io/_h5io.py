@@ -65,8 +65,6 @@ def _create_write_chunked_array(root, key, name, value):
     if key not in root:
         dset = root.create_dataset(key, value.shape, chunks=value.chunk_size)
         dset.attrs['TITLE'] = name
-        dset.attrs['SHAPE'] = value.shape
-        dset.attrs['CHUNK_SIZE'] = value.chunk_size
     else:
         dset = root[key]
         stored_shape = dset.shape
