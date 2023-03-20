@@ -666,3 +666,25 @@ def multiarray_load(index, array_merged):
         i_prev = i
     array_restore.append(array_merged[i_prev:])
     return np.array(array_restore, dtype=object)
+
+
+def has_hdf5(fname, title="h5io"):
+    h5py = _check_h5py()
+    if isinstance(fname, str):
+        if not op.isfile(fname):
+            raise IOError('file "%s" not found' % fname)
+    elif isinstance(fname, h5py.File):
+        if fname.mode == 'w':
+            raise UnsupportedOperation(
+                'file must not be opened be opened with "w"'
+            )
+        print(fname.mode)
+    else:
+        raise ValueError(f'fname must be str or h5py.File, got {type(fname)}')
+    if not isinstance(title, str):
+        raise ValueError('title must be a string')
+    if isinstance(fname, h5py.File):
+        return title in fname
+    else:
+        with h5py.File(fname, mode='r') as fid:
+            return title in fid
