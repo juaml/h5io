@@ -29,6 +29,7 @@ class ChunkedArray:
     must be the same.
 
     """
+
     def __init__(
         self,
         data: np.ndarray,
@@ -55,8 +56,8 @@ class ChunkedArray:
             t_chunk_size = self._chunk_end - self._chunk_start
             if t_chunk_size != self.chunkdata.shape[1]:
                 raise ValueError(
-                    f"The chunk size ({chunk_size}) does not match the given "
-                    f"data shape ({self.chunkdata.shape})."
+                    f"The chunk size ({t_chunk_size}) does not match the given"
+                    f" data shape ({self.chunkdata.shape})."
                 )
         elif self.chunkdata.ndim == 3:
             self._chunk_start = self.n_chunk * self.chunk_size[2]

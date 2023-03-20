@@ -137,8 +137,8 @@ def write_hdf5(fname, data, overwrite=False, compression=4,
         comp_kw = dict(compression='gzip', compression_opts=compression)
 
     def _write(fid, cleanup_data):
-        if title in fid and not isinstance(data, ChunkedArray):
-            del fid[title]
+        # if title in fid and not isinstance(data, ChunkedArray):
+        #     del fid[title]
         _triage_write(title, data, fid, comp_kw, str(type(data)),
                       cleanup_data, slash=slash, title=title,
                       use_json=use_json)
@@ -176,9 +176,14 @@ def _triage_write(key, value, root, comp_kw, where,
     if use_json and isinstance(value, (list, dict)) and \
             _json_compatible(value, slash=slash):
         value = np.frombuffer(json.dumps(value).encode('utf-8'), np.uint8)
+        if key in root:
+            del root[key]
         _create_titled_dataset(root, key, 'json', value, comp_kw)
     elif isinstance(value, dict):
-        sub_root = _create_titled_group(root, key, 'dict')
+        if key not in root:
+            sub_root = _create_titled_group(root, key, 'dict')
+        else:
+            sub_root = root[key]
         for key, sub_value in value.items():
             if not isinstance(key, str):
                 raise TypeError('All dict keys must be strings')
@@ -187,14 +192,21 @@ def _triage_write(key, value, root, comp_kw, where,
                 where + '["%s"]' % key, cleanup_data=cleanup_data, slash=slash)
     elif isinstance(value, (list, tuple)):
         title = 'list' if isinstance(value, list) else 'tuple'
-        sub_root = _create_titled_group(root, key, title)
+        if key not in root:
+            sub_root = _create_titled_group(root, key, title)
+        else:
+            sub_root = root[key]
         for vi, sub_value in enumerate(value):
             _triage_write(
                 'idx_{0}'.format(vi), sub_value, sub_root, comp_kw,
                 where + '[%s]' % vi, cleanup_data=cleanup_data, slash=slash)
     elif isinstance(value, type(None)):
+        if key in root:
+            del root[key]
         _create_titled_dataset(root, key, 'None', [False])
     elif isinstance(value, (int, float)):
+        if key in root:
+            del root[key]
         if isinstance(value, int):
             title = 'int'
         else:  # isinstance(value, float):
@@ -203,13 +215,19 @@ def _triage_write(key, value, root, comp_kw, where,
     elif isinstance(value, datetime.datetime):
         title = 'datetime'
         value = np.frombuffer(value.isoformat().encode('utf-8'), np.uint8)
+        if key in root:
+            del root[key]
         _create_titled_dataset(root, key, title, value)
     elif isinstance(value, datetime.timezone):
         title = 'timezone'  # the __repr__ is complete
         value = np.frombuffer(repr(value).encode('utf-8'), np.uint8)
+        if key in root:
+            del root[key]
         _create_titled_dataset(root, key, title, value)
     elif isinstance(value, (np.integer, np.floating, np.bool_)):
         title = 'np_{0}'.format(value.__class__.__name__)
+        if key in root:
+            del root[key]
         _create_titled_dataset(root, key, title, np.atleast_1d(value))
     elif isinstance(value, str):
         if isinstance(value, str):  # unicode
@@ -218,17 +236,25 @@ def _triage_write(key, value, root, comp_kw, where,
         else:
             value = np.frombuffer(value.encode('ASCII'), np.uint8)
             title = 'ascii'
+        if key in root:
+            del root[key]
         _create_titled_dataset(root, key, title, value, comp_kw)
     elif isinstance(value, np.ndarray):
         if not (value.dtype == np.dtype('object') and
                 len(set([sub.dtype for sub in value])) == 1):
+            if key in root:
+                del root[key]
             _create_titled_dataset(root, key, 'ndarray', value)
         else:
             ma_index, ma_data = multiarray_dump(value)
+            if key in root:
+                del root[key]
             sub_root = _create_titled_group(root, key, 'multiarray')
             _create_titled_dataset(sub_root, 'index', 'ndarray', ma_index)
             _create_titled_dataset(sub_root, 'data', 'ndarray', ma_data)
     elif sparse is not None and isinstance(value, sparse.csc_matrix):
+        if key in root:
+            del root[key]
         sub_root = _create_titled_group(root, key, 'csc_matrix')
         _triage_write('data', value.data, sub_root, comp_kw,
                       where + '.csc_matrix_data', cleanup_data=cleanup_data,
@@ -240,6 +266,8 @@ def _triage_write(key, value, root, comp_kw, where,
                       where + '.csc_matrix_indptr', cleanup_data=cleanup_data,
                       slash=slash)
     elif sparse is not None and isinstance(value, sparse.csr_matrix):
+        if key in root:
+            del root[key]
         sub_root = _create_titled_group(root, key, 'csr_matrix')
         _triage_write('data', value.data, sub_root, comp_kw,
                       where + '.csr_matrix_data', cleanup_data=cleanup_data,
