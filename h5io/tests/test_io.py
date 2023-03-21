@@ -263,3 +263,21 @@ def test_timezone(name, tmpdir):
     assert y == x
     if name is not None:
         assert y.tzname(None) == name
+
+
+def test_recursive_overwrite(tmpdir):
+    """Test HDF5 recursive overwrite."""
+    test_file = str(tmpdir / 'test.hdf5')
+    t_list = list(range(10))
+
+    write_hdf5(test_file, t_list, title='first', overwrite='update')
+    r_list = read_hdf5(test_file, 'first')
+    assert t_list == r_list
+
+    # Write a shorter list
+    t_list2 = list(range(7))
+    write_hdf5(test_file, t_list2, title='first', overwrite='update')
+    r_list = read_hdf5(test_file, 'first')
+    assert t_list2 == r_list
+
+    # t_dict = dict(a=1, b=2)
