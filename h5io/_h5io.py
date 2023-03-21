@@ -158,6 +158,19 @@ def write_hdf5(fname, data, overwrite=False, compression=4,
             _create_pandas_dataset(fname, rootname, key, title, value)
 
 
+def _get_sub_root(root, key, title):
+    """Helper to get a sub-root in h5py"""
+    if key not in root:
+        sub_root = _create_titled_group(root, key, title)
+    else:
+        sub_root = root[key]
+        if sub_root.attrs["TITLE"] != title:
+            # If the title is wrong, delete the old one and create a new one
+            del root[key]
+            sub_root = _create_titled_group(root, key, title)
+    return sub_root
+
+
 def _triage_write(key, value, root, comp_kw, where,
                   cleanup_data, slash='error', title=None,
                   use_json=False):
@@ -180,26 +193,35 @@ def _triage_write(key, value, root, comp_kw, where,
             del root[key]
         _create_titled_dataset(root, key, 'json', value, comp_kw)
     elif isinstance(value, dict):
-        if key not in root:
-            sub_root = _create_titled_group(root, key, 'dict')
-        else:
-            sub_root = root[key]
+        sub_root = _get_sub_root(root, key, 'dict')
         for key, sub_value in value.items():
             if not isinstance(key, str):
                 raise TypeError('All dict keys must be strings')
             _triage_write(
                 'key_{0}'.format(key), sub_value, sub_root, comp_kw,
                 where + '["%s"]' % key, cleanup_data=cleanup_data, slash=slash)
+        # Delete any keys that are no longer in the dict
+        for key, subnode in sub_root.items():
+            if slash == 'replace':
+                for key_spec, val_spec in special_chars.items():
+                    key = key.replace(key_spec, val_spec)
+            if key[4:] not in value:
+                del sub_root[key]
     elif isinstance(value, (list, tuple)):
         title = 'list' if isinstance(value, list) else 'tuple'
-        if key not in root:
-            sub_root = _create_titled_group(root, key, title)
-        else:
-            sub_root = root[key]
+        sub_root = _get_sub_root(root, key, title)
         for vi, sub_value in enumerate(value):
             _triage_write(
                 'idx_{0}'.format(vi), sub_value, sub_root, comp_kw,
                 where + '[%s]' % vi, cleanup_data=cleanup_data, slash=slash)
+        # Delete any keys that are no longer in the list
+        ii = len(value)
+        while True:
+            t_key = 'idx_{0}'.format(ii)
+            subnode = sub_root.get(t_key, None)
+            if subnode is None:
+                break
+            del sub_root[t_key]
     elif isinstance(value, type(None)):
         if key in root:
             del root[key]

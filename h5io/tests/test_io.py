@@ -267,10 +267,11 @@ def test_timezone(name, tmpdir):
 
 def test_recursive_overwrite(tmpdir):
     """Test HDF5 recursive overwrite."""
-    test_file = str(tmpdir / 'test.hdf5')
-    t_list = list(range(10))
+    test_file = str(tmpdir / 'test_overwrite.hdf5')
 
-    write_hdf5(test_file, t_list, title='first', overwrite='update')
+    # Write a list
+    t_list = list(range(10))
+    write_hdf5(test_file, t_list, title='first', overwrite=True)
     r_list = read_hdf5(test_file, 'first')
     assert t_list == r_list
 
@@ -280,4 +281,32 @@ def test_recursive_overwrite(tmpdir):
     r_list = read_hdf5(test_file, 'first')
     assert t_list2 == r_list
 
-    # t_dict = dict(a=1, b=2)
+    # Write a longer list
+    t_list3 = list(range(10, 30))
+    write_hdf5(test_file, t_list3, title='first', overwrite='update')
+    r_list = read_hdf5(test_file, 'first')
+    assert t_list3 == r_list
+
+    # Write a shorter list
+    t_list4 = list(range(0, 9))
+    write_hdf5(test_file, t_list4, title='first', overwrite='update')
+    r_list = read_hdf5(test_file, 'first')
+    assert t_list4 == r_list
+
+    # Write a dict with the same title
+    t_dict = dict(a=1, b=2)
+    write_hdf5(test_file, t_dict, title='first', overwrite='update')
+    r_dict = read_hdf5(test_file, 'first')
+    assert t_dict == r_dict
+
+    # Write a dict with more keys
+    t_dict2 = dict(a=1, b=2, c=3)
+    write_hdf5(test_file, t_dict2, title='first', overwrite='update')
+    r_dict = read_hdf5(test_file, 'first')
+    assert t_dict2 == r_dict
+
+    # Write a dict with less keys
+    t_dict3 = dict(a=1, c=3)
+    write_hdf5(test_file, t_dict3, title='first', overwrite='update')
+    r_dict = read_hdf5(test_file, 'first')
+    assert t_dict3 == r_dict
