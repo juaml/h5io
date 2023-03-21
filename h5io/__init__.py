@@ -12,3 +12,4 @@ from ._h5io import (
 )
 from ._version import __version__
 from .chunked_array import ChunkedArray  # noqa, analysis:ignore
+from .chunked_list import ChunkedList  # noqa, analysis:ignore

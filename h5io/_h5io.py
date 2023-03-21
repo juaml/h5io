@@ -13,6 +13,7 @@ from io import UnsupportedOperation
 import numpy as np
 
 from .chunked_array import ChunkedArray
+from .chunked_list import ChunkedList
 
 special_chars = {'{FWDSLASH}': '/'}
 tab_str = '----'
@@ -222,6 +223,21 @@ def _triage_write(key, value, root, comp_kw, where,
             if subnode is None:
                 break
             del sub_root[t_key]
+    elif isinstance(value, ChunkedList):
+        sub_root = _get_sub_root(root, key, 'chunkedlist')
+        if 'SIZE' not in sub_root.attrs:
+            sub_root.attrs["SIZE"] = value.size
+        elif sub_root.attrs["SIZE"] != value.size:
+            # Size mismatch, asume it's a new list
+            del root[key]
+            sub_root = _get_sub_root(root, key, 'chunkedlist')
+            sub_root.attrs["SIZE"] = value.size
+
+        for vi, sub_value in value.enumerate:
+            _triage_write(
+                'idx_{0}'.format(vi), sub_value, sub_root, comp_kw,
+                where + '[%s]' % vi, cleanup_data=cleanup_data, slash=slash)
+
     elif isinstance(value, type(None)):
         if key in root:
             del root[key]
@@ -404,6 +420,17 @@ def _triage_read(node, slash='ignore'):
             assert len(data) == ii
             data = tuple(data) if type_str == 'tuple' else data
             return data
+        elif type_str == 'chunkedlist':
+            data = list()
+            ii = 0
+            n_elems = node.attrs['SIZE']
+            for ii in range(n_elems):
+                subnode = node.get('idx_{0}'.format(ii), None)
+                if subnode is None:
+                    data.append(None)
+                else:
+                    data.append(_triage_read(subnode, slash=slash))
+            assert len(data) == n_elems
         elif type_str == 'csc_matrix':
             if sparse is None:
                 raise RuntimeError('scipy must be installed to read this data')
